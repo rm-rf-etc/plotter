@@ -1,0 +1,13 @@
+{
+  "name": "plotter",
+  "main": "plotter.js",
+  "version": "0.0.0",
+  "homepage": "https://github.com/rm-rf-etc/plotter",
+  "authors": [
+    "Rob Christian"
+  ],
+  "license": "MIT",
+  "dependencies": {
+    "snap.svg": "~0.4.1"
+  }
+}
