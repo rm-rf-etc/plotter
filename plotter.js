@@ -1,103 +1,105 @@
 
-var paper1 = Snap(500, 400)
-var paper2 = Snap(500, 400)
+var paper1 = Snap(1000, 400)
+var paper2 = Snap(1000, 400)
 paper1.attr({ class: 'line1' })
 paper2.attr({ class: 'line2' })
 
 
-function method1 (time) {
-	var ts = time / 10
-	var res = ts * ts
+// constants
+var a = 0.01025
+var l = 20
+
+// globals
+var v = 0
+var p = 0
+
+
+function quadratic (x) {
+	var x = x / (l * 0.5)
+	var res = x * x
 	return res
 }
 
-// constants
-var amp = 2
-var a = parseFloat((1 / 3 * (amp * 0.5)).toPrecision(8))
-var dt = 20
+function data1 (res) {
 
-var v = 0
-var p = 0
-var f = 0
+	var i = 0
+	var array = []
+	while (i<res) {
+		array[array.length] = i++
+	}
 
-function method2 (t) {
-	f = parseFloat((t / (dt * 0.5)).toPrecision(8))
-	v = parseFloat((v * f + a * f).toPrecision(8))
-	p = parseFloat((p + v).toPrecision(8))
-	v = parseFloat((v / f).toPrecision(8))
-	return p
+	return array
 }
-
-var time = 0
-function tick (t) {
-
-	time += t
-	return time
-}
-
 
 function draw1 () {
 
 	console.log("Draw 1")
-	var points1 = []
-	var vals = [
-		0,
-		1,
-		2,
-		3,
-		4,
-		5,
-		6,
-		7,
-		8,
-		9,
-		10
-	]
+	var points = []
 
-	vals.forEach(function(idx){
+	data1(10).forEach(function(idx){
+
 		var x = idx * 50
-		var y = parseFloat( (method1(idx)*400).toPrecision(6) )
+		var y = parseFloat( (quadratic(idx)*200).toPrecision(6) )
 
 		console.log( x, y )
-		points1.push( x, y )
+		points.push( x, y )
 	})
-	var p1 = paper1.polyline.call(paper1, points1)
+
+	var p1 = paper1.polyline(points)
+}
+
+
+
+function kinematic (td, time) {
+
+	var dir = (time < l / 2) ? 1 : -1
+	v = parseFloat((v + dir * a * td).toPrecision(8))
+	p = parseFloat((p + v * td).toPrecision(8))
+
+	return p
+}
+
+function data2 (res, val) {
+
+	return Array(20 * res).fill(val/res || 1/res, 0, 20 * res)
 }
 
 function draw2 () {
 
 	console.log("Draw 2")
-	var points2 = [0,0]
-	console.log(0,0)
 
-	var vals1 = [
-		2,
-		2,
-		2,
-		2,
-		2
-	]
-	var vals2 = [
-		1,
-		1,
-		1,
-		1,
-		1,
-		1,
-		1,
-		1,
-		1
-	]
+	var time = new Timer()
+	var points = []
 
-	vals1.forEach(function(idx){
-		var x = tick(idx) * 50
-		var y = parseFloat( (method2(idx)*400).toPrecision(6) )
+	data2(8, 1).forEach(function(idx){
+
+		var x = time.tick(idx)
+		var y = parseFloat( kinematic(idx, time.get()).toPrecision(6) )
 
 		console.log( x, y )
-		points2.push( x, y )
+		points.push( x * 50, y * 400 )
 	})
-	var p2 = paper2.polyline.call(paper2, points2)
+
+	var p2 = paper2.polyline(points)
 }
 
 draw1();
 draw2();
+
+
+
+function Timer () {
+
+	var time = 0
+
+	this.tick = function (t) {
+
+		time = parseFloat((time + t).toPrecision(8))
+		return time
+	}
+
+	this.get = function () {
+
+		return time
+	}
+}
