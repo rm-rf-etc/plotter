@@ -1,25 +1,100 @@
 
-var paper1 = Snap(800, 400)
-var paper2 = Snap(800, 400)
+/*
+
+Sampled results and solutions
+samples use amplitude of 10
+x:1, y:10.0000,				multiplier: 1/1 (840/840),
+x:2, y:3.33333,				multiplier: 2/3 (560/840),
+x:3, y:1.66667,				multiplier: 1/2 (420/840),
+x:4, y:1.00000,				multiplier: 2/5 (336/840),
+x:5, y:0.66667,				multiplier: 1/3 (280/840),
+x:6, y:0.47619 (160/336),	multiplier: 2/7 (240/840),
+x:7, y:0.35714 (120/336),	multiplier: 1/4 (210/840),
+
+*/
+
+var paper1 = Snap(800, 425)
+var paper2 = Snap(800, 425)
 paper1.attr({ class: 'line1' })
 paper2.attr({ class: 'line2' })
 
+var c1 = 840
+function f1 (x) {
+
+	return c1 * ++x / (0.5*x*x)
+}
+
+function afn (x,m) {
+
+	return (m || 10) * x / (x*x) * (f1(x) / c1)
+}
+
 
 // constants
-var res = 10
+var res = 9
 var len = 50
-var a, i
-a = (4.0325 / (len*len))
-// a = (0.0205 / (len*len))
+var rate = parseFloat((res/len).toPrecision(8))
+var a = afn(res,400)
+console.log('accel:',a)
 
 // globals
 var v = 0
 var p = 0
 
+drawScurve();
+// drawParabola();
 
+
+/* ====================================== */
+
+
+function kinematic (td) {
+
+	v = parseFloat((v + a).toPrecision(8))
+	p = parseFloat((p + v).toPrecision(8))
+
+	return p
+}
+
+function data2 (res) {
+
+	if (!res) return []
+
+	var result = Array(res).fill( len/res, 0, res )
+	// console.log(result)
+	return result
+}
+
+function drawScurve () {
+
+	console.log("Draw 2")
+
+	var timer = new Timer()
+	var points1 = [0,0]
+	data2(res).forEach(function(idx){
+
+		var x = timer.tick(idx)
+		var y = parseFloat( kinematic(idx).toPrecision(6) )
+
+		console.log( x )
+		console.log( y )
+		console.log("---------------")
+		points1.push( x * 10, y )
+	})
+
+	var line1 = paper1.polyline([0,400,800,400])
+	var curve1 = paper2.polyline(points1)
+}
+
+
+/* ====================================== */
+
+/*
 function quadratic (x) {
-	var x = x / (len * 0.5)
-	var res = x * x
+
+	var x = parseFloat((x / (len * 0.5)).toPrecision(6))
+	var res = parseFloat((x * x).toPrecision(6))
+
 	return res
 }
 
@@ -32,7 +107,7 @@ function data1 (res) {
 	return array
 }
 
-function draw1 () {
+function drawParabola () {
 
 	console.log("Draw 1")
 	var points = []
@@ -50,46 +125,7 @@ function draw1 () {
 }
 
 
-
-function kinematic (td, time) {
-
-	var dir = (time < len / 2) ? 1 : -1
-	v = parseFloat((v + dir * a * td).toPrecision(8))
-	p = parseFloat((p + v * td).toPrecision(8))
-
-	return p
-}
-
-function data2 (res, td) {
-
-	if (!res) return []
-
-	// var val = (td) ? (td/res) : (1/res)
-	return Array(len*res).fill( 1/res, 0, len*res )
-}
-
-function draw2 () {
-
-	console.log("Draw 2")
-
-	var time = new Timer()
-	var points = []
-
-	data2(res).forEach(function(idx){
-
-		var x = time.tick(idx)
-		var y = parseFloat( kinematic(idx, time.get()).toPrecision(6) )
-
-		console.log( x, y )
-		points.push( x * 10, y * 400 )
-	})
-
-	var p2 = paper2.polyline(points)
-}
-
-draw1();
-draw2();
-
+/* ====================================== */
 
 
 function Timer () {
