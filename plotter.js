@@ -18,15 +18,14 @@ var paper2 = Snap(800, 425)
 paper1.attr({ class: 'line1' })
 paper2.attr({ class: 'line2' })
 
-var c1 = 840
 function f1 (x) {
 
-	return c1 * ++x / (0.5*x*x)
+	return ++x / (0.5*x*x)
 }
 
 function afn (x,m) {
 
-	return (m || 10) * x / (x*x) * (f1(x) / c1)
+	return (m || 1) * x / (x*x) * f1(x)
 }
 
 
