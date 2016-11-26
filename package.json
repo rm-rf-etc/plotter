@@ -1,0 +1,23 @@
+{
+  "name": "s-curve-plotter",
+  "version": "1.0.0",
+  "description": "",
+  "main": "plotter.js",
+  "dependencies": {
+    "d3": "^4.4.0"
+  },
+  "devDependencies": {},
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/rm-rf-etc/plotter.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/rm-rf-etc/plotter/issues"
+  },
+  "homepage": "https://github.com/rm-rf-etc/plotter#readme"
+}
