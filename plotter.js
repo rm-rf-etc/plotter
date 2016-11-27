@@ -4,7 +4,7 @@ var col2 = '#777'
 var col3 = '#eee'
 
 // constants
-var _res = 9
+var _res = 7
 var _len = 500
 var _amp = 400
 
@@ -22,36 +22,33 @@ chart1.polyline([1, line_hi, 1, line_hi-6]).attr({stroke:col2}) // upper time ma
 chart1.polyline([_len, line_hi, _len, line_hi-6]).attr({stroke:col2}) // upper time marker
 
 chart1.polyline([0, line_lo, 800, line_lo]).attr({stroke:col2}) // lower bound and DC baseline
-chart1.polyline([1, line_lo, 1, 6]).attr({stroke:col2}) // lower time marker
-chart1.polyline([_len, line_lo, _len, 6]).attr({stroke:col2}) // lower time marker
+chart1.polyline([1, line_lo, 1, line_lo+6]).attr({stroke:col2}) // lower time marker
+chart1.polyline([_len, line_lo, _len, line_lo+6]).attr({stroke:col2}) // lower time marker
 
-drawScurve(chart1);
+drawSCurve(chart1)
 
 
 /* ====================================== */
 
 
 
-function drawScurve (snapObj) {
+function drawSCurve (snapObj) {
 
 	console.log("Draw 2")
 
-	var curve = new KinematicCurve({ res:_res, len:_len })
-	var plot = new PlotLine(snapObj, { stroke:col1 })
 	var timer = new Timer()
+	var curve = new KinematicCurve({ res:_res, amp:_amp, len:_len })
+	var plot = new PlotLine(snapObj, { stroke:col1 })
 
 	var timeSteps = Array(_res).fill( (_len*0.5)/_res, 0, _res )
 	timeSteps.forEach(function(idx){
 
+		// var r = Math.random() * 2 - 1
 		var x = timer.tick(idx)
 		var y = parseFloat( curve.tick(idx).toPrecision(4) )
-
-		console.log( {x:x, y:y} )
-		console.log("--------------------------------")
 	})
 
-	plot.add(curve.data)
-	plot.draw()
+	plot.add(curve.data).draw()
 }
 
 
@@ -86,71 +83,76 @@ function PlotLine (paper, svgOpts) {
 	this.draw = function () {
 
 		paper.polyline(points).attr(svgOpts)
+		return this
 	}
 
 	this.add = function (data) {
 
 		points.push.call(points, data)
+		return this
 	}
 }
 
 
 /*
-# Sampled results and associated scaling solution w/ common denominator
+To find the constant acceleration function, a curve was rendered
+in CAD at resolutions 2 thru 6. Below is the data collected and
+relationships that were found, before simplifying to produce the
+form: 2m / (x + x^2)
 
 	samples taken at amplitude 10
-	x:1, y:10.0000,				multiplier: 1/1 (840/840),
-	x:2, y:3.33333,				multiplier: 2/3 (560/840),
-	x:3, y:1.66667,				multiplier: 1/2 (420/840),
-	x:4, y:1.00000,				multiplier: 2/5 (336/840),
-	x:5, y:0.66667,				multiplier: 1/3 (280/840),
-	x:6, y:0.47619 (160/336),	multiplier: 2/7 (240/840),
-	x:7, y:0.35714 (120/336),	multiplier: 1/4 (210/840),
+
+	res:1,	accel:10.0000,				multiplier: 1/1 (840/840),
+	res:2,	accel:3.33333,				multiplier: 2/3 (560/840),
+	res:3,	accel:1.66667,				multiplier: 1/2 (420/840),
+	res:4,	accel:1.00000,				multiplier: 2/5 (336/840),
+	res:5,	accel:0.66667,				multiplier: 1/3 (280/840),
+	res:6,	accel:0.47619 (160/336),	multiplier: 2/7 (240/840),
+	res:7,	accel:0.35714 (120/336),	multiplier: 1/4 (210/840),
 */
 function KinematicCurve (opts) {
 
 	// configuration constants
 	var res = opts.res || 9
-	var len = opts.len || 500
-	var amp = opts.amp || 400
+	var len = (opts.len ? opts.len * 0.5 : 500)
+	var amp = (opts.amp ? opts.amp * 0.5 : 0.5)
+	var dyn = (opts.dyn_amp ? opts.dyn_amp : false)
+
 	var v = opts.v || 0
 	var p = opts.p || 0
-	var points = [0,p]
-
 	var a = afn(res,amp)
 	var timer = new Timer()
+	var target = 0
 
-
-	var rate = parseFloat((res/(len*0.5)).toPrecision(8))
-	console.log('accel:',a)
-
+	var points = [0,p]
+	var zero = Math.atan2(1,0)
 
 	// Render the next point
 	this.tick = function (td) {
 
 		var t = timer.tick(td)
 
-		v = parseFloat((v + a).toPrecision(8))
-		p = parseFloat((p + v).toPrecision(8))
+		if (dyn) { a = afn(len/td, amp) }
+		var m = target - p
+
+		v = v + a
+		p = p + v
 
 		points.push(t, p)
 		return p
 	}
 
-	Object.defineProperty(this, 'data', { get:function () {
+	Object.defineProperty(this, 'data', {
+		get:function () {
 
 			return points
 		}
 	})
 
 
-	function f1 (x) {
+	// Calculates acceleration constant for any given resolution
+	function afn (x, m) {
 
-		return ++x / (0.5*x*x)
-	}
-
-	function afn (x,m) {
-
-		return ((m) ? m*0.5 : 0.5) * x / (x*x) * f1(x)
+		return 2 * m / (x + x*x)
 	}
 }
