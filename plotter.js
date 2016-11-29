@@ -7,6 +7,7 @@ var col3 = '#eee'
 var _res = 7
 var _len = 500
 var _amp = 400
+var imprecise = false
 
 
 var chart1 = Snap(800, 425).attr({ id: 'chart1' })
@@ -37,13 +38,15 @@ function drawSCurve (snapObj) {
 	console.log("Draw 2")
 
 	var timer = new Timer()
-	var curve = new KinematicCurve({ res:_res, amp:_amp, len:_len })
+	var curve = new KinematicCurve({ res:_res, amp:_amp, len:_len, dynamic:imprecise })
 	var plot = new PlotLine(snapObj, { stroke:col1 })
 
 	var timeSteps = Array(_res).fill( (_len*0.5)/_res, 0, _res )
 	timeSteps.forEach(function(idx){
 
-		// var r = Math.random() * 2 - 1
+		if (imprecise) {
+			idx += Math.random() * 4 - 2
+		}
 		var x = timer.tick(idx)
 		var y = parseFloat( curve.tick(idx).toPrecision(4) )
 	})
@@ -116,7 +119,6 @@ function KinematicCurve (opts) {
 	var res = opts.res || 9
 	var amp = opts.amp || 1
 	var len = (opts.len ? opts.len * 0.5 : 500)
-	var dyn = (opts.dyn_amp ? opts.dyn_amp : false)
 
 	var vel = opts.v || 0
 	var pos = opts.p || 0
@@ -136,11 +138,11 @@ function KinematicCurve (opts) {
 	})
 
 	// Render the next point
-	this.tick = tickStatic
+	this.tick = (!!opts.dynamic) ? procDynamic : procStatic
 
 
 	// ttime is total time, dtime is delta time.
-	function tickStatic (dtime) {
+	function procStatic (dtime) {
 
 		var ttime = timer.tick(dtime)
 		var mag = target - pos
@@ -152,10 +154,10 @@ function KinematicCurve (opts) {
 		return pos
 	}
 
-	function tickDynamic (dtime) {
+	function procDynamic (dtime) {
 
 		acc = afn(len/dtime)
-		tickStatic(dtime)
+		return procStatic(dtime)
 	}
 
 	// Calculates acceleration constant for any given resolution
