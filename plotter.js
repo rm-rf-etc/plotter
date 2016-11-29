@@ -5,56 +5,73 @@ var col3 = '#eee'
 
 // constants
 var _res = 7
-var _len = 500
-var _amp = 400
+var _len = 700
+var _amp = 700
 var imprecise = false
 
+var MAX_X = 725
+var MAX_Y = 725
 
-var chart1 = Snap(800, 425).attr({ id: 'chart1' })
+
+var chart1 = Snap(MAX_X, MAX_Y).attr({ id: 'chart1' })
 
 var line_mid = _amp * 0.5 + 1
 var line_hi = _amp + 1
 var line_lo = 1
 
-chart1.polyline([0, line_mid, 800, line_mid]).attr({stroke:col3}) // 50%
+// The 50% marker line
+var midline = [0, line_mid, MAX_X, line_mid]
+// upper bound
+var topline = [0, line_hi, MAX_X, line_hi]
+// lower bound and DC baseline
+var bottomline = [0, line_lo, MAX_X, line_lo]
 
-chart1.polyline([0, line_hi, 800, line_hi]).attr({stroke:col2}) // upper bound
-chart1.polyline([1, line_hi, 1, line_hi-6]).attr({stroke:col2}) // upper time marker
-chart1.polyline([_len, line_hi, _len, line_hi-6]).attr({stroke:col2}) // upper time marker
+chart1.polyline(topline).attr({stroke:col2})
+chart1.polyline(midline).attr({stroke:col3})
+chart1.polyline(bottomline).attr({stroke:col2})
 
-chart1.polyline([0, line_lo, 800, line_lo]).attr({stroke:col2}) // lower bound and DC baseline
-chart1.polyline([1, line_lo, 1, line_lo+6]).attr({stroke:col2}) // lower time marker
-chart1.polyline([_len, line_lo, _len, line_lo+6]).attr({stroke:col2}) // lower time marker
+// upper timeline markers
+var topmarker1 = [1, line_hi, 1, line_hi-6]
+var topmarker2 = [_len, line_hi, _len, line_hi-6]
 
-drawSCurve(chart1)
+chart1.polyline(topmarker1).attr({stroke:col2})
+chart1.polyline(topmarker2).attr({stroke:col2})
+
+// lower timeline markers
+var bottomMarker1 = [1, line_lo, 1, line_lo+6]
+var bottomMarker2 = [_len, line_lo, _len, line_lo+6]
+
+chart1.polyline(bottomMarker1).attr({stroke:col2})
+chart1.polyline(bottomMarker2).attr({stroke:col2})
 
 
-/* ====================================== */
 
+var x = 0 // x is time
+var y = 0
+var sim = new KinematicCurve({
+	dynamic: imprecise,
+	res: _res,
+	amp: _amp,
+	len: _len,
+})
+var curve = [0,0]
+var plot = new PlotLine(chart1, { stroke:col1 })
 
+_len *= 0.5
+var timeInterval = _len/_res
+var timeSteps = Array(_res * 2).fill(timeInterval, 0, _res * 2)
 
-function drawSCurve (snapObj) {
+timeSteps.forEach(function(idx){
 
-	console.log("Draw 2")
+	if (imprecise) {
+		idx += Math.random() * 4 - 2
+	}
+	x += idx
+	y = parseFloat( sim.tick(idx).toPrecision(4) )
+	curve.push(x, y)
+})
 
-	var time = 0
-	var curve = new KinematicCurve({ res:_res, amp:_amp, len:_len, dynamic:imprecise })
-	var plot = new PlotLine(snapObj, { stroke:col1 })
-
-	var timeInterval = (_len*0.5)/_res
-	var timeSteps = Array(_res).fill(timeInterval, 0, _res)
-
-	timeSteps.forEach(function(idx){
-
-		if (imprecise) {
-			idx += Math.random() * 4 - 2
-		}
-		var x = time += idx
-		var y = parseFloat( curve.tick(idx).toPrecision(4) )
-	})
-
-	plot.add(curve.data).draw()
-}
+plot.draw(curve)
 
 
 
@@ -67,14 +84,19 @@ Here be Classes
 function PlotLine (paper, svgOpts) {
 
 	var points = []
+	var self = this
 
-	this.draw = function () {
+	self.draw = function (data) {
+
+		if (data) {
+			self.add(data)
+		}
 
 		paper.polyline(points).attr(svgOpts)
 		return this
 	}
 
-	this.add = function (data) {
+	self.add = function (data) {
 
 		points.push.call(points, data)
 		return this
@@ -108,46 +130,25 @@ function KinematicCurve (opts) {
 
 	var vel = opts.v || 0
 	var pos = opts.p || 0
-	var acc = afn(res)
-	var ttime = 0
-	var target = 0
-
-	var points = [0,pos]
-	var zero = Math.atan2(1,0)
-
-
-	Object.defineProperty(this, 'data', {
-		get:function () {
-
-			return points
-		}
-	})
+	var acc = getAcc(res)
 
 	// Render the next point
 	this.tick = (!!opts.dynamic) ? procDynamic : procStatic
 
-
-	// ttime is total time, dtime is delta time.
 	function procStatic (dtime) {
 
-		var mag = target - pos
-
-		vel = vel + acc * amp
-		pos = pos + vel
-
-		ttime += dtime
-		points.push(ttime, pos)
-		return pos
+		var mod = 1.25 - 2.5 * pos / amp
+		return pos += vel += acc * amp * mod
 	}
 
 	function procDynamic (dtime) {
 
-		acc = afn(len/dtime)
+		acc = getAcc(len/dtime)
 		return procStatic(dtime)
 	}
 
 	// Calculates acceleration constant for any given resolution
-	function afn (res) {
+	function getAcc (res) {
 
 		return 1 / (res + res*res)
 	}
