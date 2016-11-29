@@ -114,33 +114,19 @@ function KinematicCurve (opts) {
 
 	// configuration constants
 	var res = opts.res || 9
+	var amp = opts.amp || 1
 	var len = (opts.len ? opts.len * 0.5 : 500)
-	var amp = (opts.amp ? opts.amp * 0.5 : 0.5)
 	var dyn = (opts.dyn_amp ? opts.dyn_amp : false)
 
-	var v = opts.v || 0
-	var p = opts.p || 0
-	var a = afn(res,amp)
+	var vel = opts.v || 0
+	var pos = opts.p || 0
+	var acc = afn(res)
 	var timer = new Timer()
 	var target = 0
 
-	var points = [0,p]
+	var points = [0,pos]
 	var zero = Math.atan2(1,0)
 
-	// Render the next point
-	this.tick = function (td) {
-
-		var t = timer.tick(td)
-
-		if (dyn) { a = afn(len/td, amp) }
-		var m = target - p
-
-		v = v + a
-		p = p + v
-
-		points.push(t, p)
-		return p
-	}
 
 	Object.defineProperty(this, 'data', {
 		get:function () {
@@ -149,10 +135,32 @@ function KinematicCurve (opts) {
 		}
 	})
 
+	// Render the next point
+	this.tick = tickStatic
+
+
+	// ttime is total time, dtime is delta time.
+	function tickStatic (dtime) {
+
+		var ttime = timer.tick(dtime)
+		var mag = target - pos
+
+		vel = vel + acc * amp
+		pos = pos + vel
+
+		points.push(ttime, pos)
+		return pos
+	}
+
+	function tickDynamic (dtime) {
+
+		acc = afn(len/dtime)
+		tickStatic(dtime)
+	}
 
 	// Calculates acceleration constant for any given resolution
-	function afn (x, m) {
+	function afn (x) {
 
-		return 2 * m / (x + x*x)
+		return 1 / (x + x*x)
 	}
 }
