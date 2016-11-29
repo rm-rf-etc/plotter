@@ -83,13 +83,14 @@ function PlotLine (paper, svgOpts) {
 
 
 /*
-To find the constant acceleration function, a curve was rendered
-in CAD at resolutions 2 thru 6. Below is the data collected and
-relationships that were found, before simplifying to produce the
-form: 2m / (x + x^2)
+To find the constant acceleration function, a half S-curve was
+rendered in CAD at resolutions 2 thru 6. Below is the data
+collected and relationships that were found, before simplifying
+to produce the equation:
 
-	samples taken at amplitude 10
+	acceleration = amplitude * 1 / (resolution + resolution^2)
 
+	[ Samples taken at amplitude 20 ]
 	res:1,	accel:10.0000,				multiplier: 1/1 (840/840),
 	res:2,	accel:3.33333,				multiplier: 2/3 (560/840),
 	res:3,	accel:1.66667,				multiplier: 1/2 (420/840),
@@ -146,8 +147,8 @@ function KinematicCurve (opts) {
 	}
 
 	// Calculates acceleration constant for any given resolution
-	function afn (x) {
+	function afn (res) {
 
-		return 1 / (x + x*x)
+		return 1 / (res + res*res)
 	}
 }
