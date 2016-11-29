@@ -37,17 +37,19 @@ function drawSCurve (snapObj) {
 
 	console.log("Draw 2")
 
-	var timer = new Timer()
+	var time = 0
 	var curve = new KinematicCurve({ res:_res, amp:_amp, len:_len, dynamic:imprecise })
 	var plot = new PlotLine(snapObj, { stroke:col1 })
 
-	var timeSteps = Array(_res).fill( (_len*0.5)/_res, 0, _res )
+	var timeInterval = (_len*0.5)/_res
+	var timeSteps = Array(_res).fill(timeInterval, 0, _res)
+
 	timeSteps.forEach(function(idx){
 
 		if (imprecise) {
 			idx += Math.random() * 4 - 2
 		}
-		var x = timer.tick(idx)
+		var x = time += idx
 		var y = parseFloat( curve.tick(idx).toPrecision(4) )
 	})
 
@@ -61,23 +63,6 @@ function drawSCurve (snapObj) {
 Here be Classes
 
 */
-
-function Timer () {
-
-	var time = 0
-
-	this.tick = function (t) {
-
-		time = parseFloat((time + t).toPrecision(8))
-		return time
-	}
-
-	this.get = function () {
-
-		return time
-	}
-}
-
 
 function PlotLine (paper, svgOpts) {
 
@@ -123,7 +108,7 @@ function KinematicCurve (opts) {
 	var vel = opts.v || 0
 	var pos = opts.p || 0
 	var acc = afn(res)
-	var timer = new Timer()
+	var ttime = 0
 	var target = 0
 
 	var points = [0,pos]
@@ -144,12 +129,12 @@ function KinematicCurve (opts) {
 	// ttime is total time, dtime is delta time.
 	function procStatic (dtime) {
 
-		var ttime = timer.tick(dtime)
 		var mag = target - pos
 
 		vel = vel + acc * amp
 		pos = pos + vel
 
+		ttime += dtime
 		points.push(ttime, pos)
 		return pos
 	}
