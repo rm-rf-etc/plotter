@@ -1,10 +1,14 @@
 
+Number.prototype.limit = function(min, max) {
+	return Math.min(Math.max(this, min), max)
+}
+
 var col1 = '#fba'
 var col2 = '#777'
 var col3 = '#eee'
 
 // constants
-var _res = 7
+var _res = 6
 var _len = 700
 var _amp = 700
 var imprecise = false
@@ -124,21 +128,34 @@ to produce the equation:
 function KinematicCurve (opts) {
 
 	// configuration constants
+	var time = 0
+	var start = 0
+
 	var res = opts.res || 9
 	var amp = opts.amp || 1
 	var len = (opts.len ? opts.len * 0.5 : 500)
 
-	var vel = opts.v || 0
+	// var vel = opts.v || amp/res
 	var pos = opts.p || 0
-	var acc = getAcc(res)
+	var dst = amp*0.7
+	var maxv = amp/len
+
+	function vel () {
+		var _a = Math.abs((pos/amp - dst/amp) * 3).limit(0, 1)
+		var _b = Math.abs(start/len - time/len).limit(0, 1)
+		return _a * _b * maxv
+	}
 
 	// Render the next point
 	this.tick = (!!opts.dynamic) ? procDynamic : procStatic
 
 	function procStatic (dtime) {
 
-		var mod = 1.25 - 2.5 * pos / amp
-		return pos += vel += acc * amp * mod
+		time += dtime
+		pos += vel() * dtime // += acc * amp * mod
+		console.log(dst, pos)
+
+		return pos
 	}
 
 	function procDynamic (dtime) {
