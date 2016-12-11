@@ -3,18 +3,35 @@ Number.prototype.limit = function(min, max) {
 	return Math.min(Math.max(this, min), max)
 }
 
-var col1 = '#fba'
+var colA = '#fba'
+var colB = '#acf'
 var col2 = '#777'
 var col3 = '#eee'
 
 // constants
-var _res = 20
+var _res1 = 30
+var _res2 = 10
 var _len = 700
 var _amp = 500
+var _acc = 1
+var repeats = 1
 var imprecise = false
 
-var MAX_X = 725
-var MAX_Y = 725
+var sim1 = new KinematicCurve({
+	len: _len,
+	amp: _amp,
+	acc: _acc,
+})
+// var sim2 = new KinematicCurve({
+// 	len: _len,
+// 	amp: _amp,
+// 	acc: _acc,
+// })
+
+
+
+var MAX_X = _len * repeats + 20
+var MAX_Y = _amp + 20
 
 
 var chart1 = Snap(MAX_X, MAX_Y).attr({ id: 'chart1' })
@@ -30,52 +47,50 @@ var topline = [0, line_hi, MAX_X, line_hi]
 // lower bound and DC baseline
 var bottomline = [0, line_lo, MAX_X, line_lo]
 
-chart1.polyline(topline).attr({stroke:col2})
-chart1.polyline(midline).attr({stroke:col3})
-chart1.polyline(bottomline).attr({stroke:col2})
-
 // upper timeline markers
 var topmarker1 = [1, line_hi, 1, line_hi-6]
 var topmarker2 = [_len, line_hi, _len, line_hi-6]
-
-chart1.polyline(topmarker1).attr({stroke:col2})
-chart1.polyline(topmarker2).attr({stroke:col2})
 
 // lower timeline markers
 var bottomMarker1 = [1, line_lo, 1, line_lo+6]
 var bottomMarker2 = [_len, line_lo, _len, line_lo+6]
 
+chart1.polyline(topline).attr({stroke:col2})
+chart1.polyline(midline).attr({stroke:col3})
+chart1.polyline(bottomline).attr({stroke:col2})
+
+chart1.polyline(topmarker1).attr({stroke:col2})
+chart1.polyline(topmarker2).attr({stroke:col2})
+
 chart1.polyline(bottomMarker1).attr({stroke:col2})
 chart1.polyline(bottomMarker2).attr({stroke:col2})
 
 
+// var plot2 = new PlotLine(chart1, { stroke:colB })
+// plot2.draw( generateCurve(_res2, _len, sim2) )
 
-var x = 0 // x is time
-var y = 0
-var sim = new KinematicCurve({
-	dynamic: imprecise,
-	res: _res,
-	amp: _amp,
-	len: _len,
-})
-var curve = [0,0]
-var plot = new PlotLine(chart1, { stroke:col1 })
+var plot1 = new PlotLine(chart1, { stroke:colA })
+plot1.draw( generateCurve(_res1, _len, sim1) )
 
-_len *= 0.5
-var timeInterval = _len/_res
-var timeSteps = Array(_res * 2).fill(timeInterval, 0, _res * 2)
 
-timeSteps.forEach(function(idx){
+function generateCurve (res, len, sim) {
 
-	if (imprecise) {
-		idx += Math.random() * 4 - 2
-	}
-	x += idx
-	y = parseFloat( sim.tick(idx).toPrecision(4) )
-	curve.push(x, y)
-})
+	var x = 0
+	var y = 0
+	var timeInterval = len/res
+	var timeSteps = ([0,0]).concat(Array(res).fill(timeInterval, 0, res))
 
-plot.draw(curve)
+	return timeSteps.map(function (idx) {
+
+		if (imprecise) {
+			idx += Math.random() * 4 - 2
+		}
+		x += idx
+		y = parseFloat( sim.tick(idx).toPrecision(10) )
+		return [x, y]
+	})
+}
+
 
 
 
@@ -108,69 +123,74 @@ function PlotLine (paper, svgOpts) {
 }
 
 
-/*
-To find the constant acceleration function, a half S-curve was
-rendered in CAD at resolutions 2 thru 6. Below is the data
-collected and relationships that were found, before simplifying
-to produce the equation:
 
-	acceleration = amplitude * 1 / (resolution + resolution^2)
-
-	[ Samples taken at amplitude 20 ]
-	res:1,	accel:10.0000,				multiplier: 1/1 (840/840),
-	res:2,	accel:3.33333,				multiplier: 2/3 (560/840),
-	res:3,	accel:1.66667,				multiplier: 1/2 (420/840),
-	res:4,	accel:1.00000,				multiplier: 2/5 (336/840),
-	res:5,	accel:0.66667,				multiplier: 1/3 (280/840),
-	res:6,	accel:0.47619 (160/336),	multiplier: 2/7 (240/840),
-	res:7,	accel:0.35714 (120/336),	multiplier: 1/4 (210/840),
-*/
 function KinematicCurve (opts) {
 
-	// configuration constants
+	var dpos = 0.1
+	var speak = true
+
 	var time = 0
 	var start = 0
-
-	var res = opts.res || 9
-	var amp = opts.amp || 500
-	var len = opts.len || 500
-	var acc = opts.at || 0.25
-	var len2 = len * acc
-
-	var dst = 250
+	var end = 0
 
 	var pos = opts.p || 0
-	var end = len * (dst/amp + acc)
-	var maxv = amp/len
+	var amp = opts.amp || 500
+	var acc1 = (opts.acc || 1).limit(0, 1)
+	var acc2 = acc1 * 0.5
+	var len1 = opts.len || 500
+	var len2 = len1 * acc2
+	var velA = 0
+	var velB = 0
+	var _vel = 0
+
+	_vel = amp / (len1 - len1 * acc2)
+	end = len1 * dpos + len2 * (1 - dpos)
+
+var unknown = 89.5
+console.log({
+	calculated: end,
+	needed: end - unknown,
+	'acc2 - dpos': acc2 - dpos
+})
+end -= unknown
 
 	function vel () {
-		var _a = ((time - start)/len2).limit(0, 1)
-		var _b = (len2 > 0) ? ((end - time)/len2).limit(0, 1) : 1
-		console.log(_a, _b)
-		return _a * _b * maxv
+
+		velB = velA
+		velA = _vel
+
+		if (time - start < len2) {
+			velA *= (time - start) / len2
+		}
+
+		if (end - time < len2) {
+			velA *= Math.max(0, (end - time) / len2)
+		}
+
+		if (speak && parseFloat(time.toPrecision(8)) >= len1) endingInspection()
+
+		return (velA + velB) * 0.5
 	}
 
-	// Render the next point
-	this.tick = (!!opts.dynamic) ? procDynamic : procStatic
-
-	function procStatic (dtime) {
+	// Process that renders the current value when called
+	this.tick = function proc (dtime) {
 
 		time += dtime
-		pos += vel() * dtime // += acc * amp * mod
-		// console.log(dst, pos)
-
-		return pos
+		return pos += dtime * ((acc2 > 0) ? vel() : _vel)
 	}
 
-	function procDynamic (dtime) {
 
-		acc = getAcc(len/dtime)
-		return procStatic(dtime)
-	}
+	function endingInspection () {
 
-	// Calculates acceleration constant for any given resolution
-	function getAcc (res) {
+		speak = false
 
-		return 1 / (res + res*res)
+		console.log({
+			"time now": parseFloat(time.toPrecision(8)),
+			"end": len1,
+		})
+		console.log({
+			"expected": amp * dpos,
+			"actual": parseFloat(pos.toPrecision(8)),
+		})
 	}
 }
