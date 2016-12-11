@@ -8,9 +8,9 @@ var col2 = '#777'
 var col3 = '#eee'
 
 // constants
-var _res = 6
+var _res = 20
 var _len = 700
-var _amp = 700
+var _amp = 500
 var imprecise = false
 
 var MAX_X = 725
@@ -132,17 +132,21 @@ function KinematicCurve (opts) {
 	var start = 0
 
 	var res = opts.res || 9
-	var amp = opts.amp || 1
-	var len = (opts.len ? opts.len * 0.5 : 500)
+	var amp = opts.amp || 500
+	var len = opts.len || 500
+	var acc = opts.at || 0.25
+	var len2 = len * acc
 
-	// var vel = opts.v || amp/res
+	var dst = 250
+
 	var pos = opts.p || 0
-	var dst = amp*0.7
+	var end = len * (dst/amp + acc)
 	var maxv = amp/len
 
 	function vel () {
-		var _a = Math.abs((pos/amp - dst/amp) * 3).limit(0, 1)
-		var _b = Math.abs(start/len - time/len).limit(0, 1)
+		var _a = ((time - start)/len2).limit(0, 1)
+		var _b = (len2 > 0) ? ((end - time)/len2).limit(0, 1) : 1
+		console.log(_a, _b)
 		return _a * _b * maxv
 	}
 
@@ -153,7 +157,7 @@ function KinematicCurve (opts) {
 
 		time += dtime
 		pos += vel() * dtime // += acc * amp * mod
-		console.log(dst, pos)
+		// console.log(dst, pos)
 
 		return pos
 	}
