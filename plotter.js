@@ -9,7 +9,8 @@ var col2 = '#777'
 var col3 = '#eee'
 
 // constants
-var _res1 = 30
+var _res = 3
+var _res1 = _res * 4
 var _res2 = 10
 var _len = 700
 var _amp = 500
@@ -126,7 +127,7 @@ function PlotLine (paper, svgOpts) {
 
 function KinematicCurve (opts) {
 
-	var dpos = 0.25
+	var dpos = 0.75
 	var speak = true
 
 	var time = 0
@@ -148,7 +149,7 @@ function KinematicCurve (opts) {
 
 	end = (apex >= 0)
 		? len1 * dpos + len2 * (1 - dpos)
-		: 25 * Math.log(dpos) + 460 * dpos + 225
+		: 24 * Math.log(dpos) + 460 * dpos + 224
 
 	function vel () {
 
