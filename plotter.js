@@ -13,7 +13,7 @@ var _res1 = 30
 var _res2 = 10
 var _len = 700
 var _amp = 500
-var _acc = 1
+var _acc = 0.5
 var repeats = 1
 var imprecise = false
 
@@ -126,7 +126,7 @@ function PlotLine (paper, svgOpts) {
 
 function KinematicCurve (opts) {
 
-	var dpos = 0.1
+	var dpos = 0.25
 	var speak = true
 
 	var time = 0
@@ -144,15 +144,11 @@ function KinematicCurve (opts) {
 	var _vel = 0
 
 	_vel = amp / (len1 - len1 * acc2)
-	end = len1 * dpos + len2 * (1 - dpos)
+	var apex = dpos - acc1
 
-var unknown = 89.5
-console.log({
-	calculated: end,
-	needed: end - unknown,
-	'acc2 - dpos': acc2 - dpos
-})
-end -= unknown
+	end = (apex >= 0)
+		? len1 * dpos + len2 * (1 - dpos)
+		: 25 * Math.log(dpos) + 460 * dpos + 225
 
 	function vel () {
 
