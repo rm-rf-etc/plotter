@@ -9,7 +9,8 @@ var col2 = '#777'
 var col3 = '#eee'
 
 // constants
-var _res1 = 30
+var _res = 6
+var _res1 = _res * 4
 var _res2 = 10
 var _len = 700
 var _amp = 500
@@ -126,15 +127,15 @@ function PlotLine (paper, svgOpts) {
 
 function KinematicCurve (opts) {
 
-	var dpos = 0.25
+	var dpos = 0.5
 	var speak = true
 
-	var time = 0
+	var time = new Big(0)
 	var start = 0
 	var end = 0
 
 	var pos = opts.p || 0
-	var amp = opts.amp || 500
+	var amp = new Big(opts.amp || 500)
 	var acc1 = (opts.acc || 1).limit(0, 1)
 	var acc2 = acc1 * 0.5
 	var len1 = opts.len || 500
@@ -143,12 +144,12 @@ function KinematicCurve (opts) {
 	var velB = 0
 	var _vel = 0
 
-	_vel = amp / (len1 - len1 * acc2)
+	_vel = amp.div(len1 - len1 * acc2)
 	var apex = dpos - acc1
 
 	end = (apex >= 0)
-		? len1 * dpos + len2 * (1 - dpos)
-		: 25 * Math.log(dpos) + 460 * dpos + 225
+		? Big(len1).times(dpos).plus( Big(len2).times( Big(1).minus(dpos) ) )
+		: Big(25).times( Big(Math.log(dpos)).plus( Big(460).times(dpos).plus(225) ) )
 
 	function vel () {
 
@@ -156,23 +157,23 @@ function KinematicCurve (opts) {
 		velA = _vel
 
 		if (time - start < len2) {
-			velA *= (time - start) / len2
+			velA = velA.times(time.minus(start).div(len2))
 		}
 
-		if (end - time < len2) {
-			velA *= Math.max(0, (end - time) / len2)
+		if (end.minus(time) < len2) {
+			velA = velA.times( Math.max(0, end.minus(time).div(len2)) )
 		}
 
 		if (speak && parseFloat(time.toPrecision(8)) >= len1) endingInspection()
 
-		return (velA + velB) * 0.5
+		return velA.plus(velB).times(0.5)
 	}
 
 	// Process that renders the current value when called
 	this.tick = function proc (dtime) {
 
-		time += dtime
-		return pos += dtime * ((acc2 > 0) ? vel() : _vel)
+		time = time.plus(dtime)
+		return +(pos += dtime * ((acc2 > 0) ? vel() : _vel))
 	}
 
 
