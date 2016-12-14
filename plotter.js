@@ -5,29 +5,39 @@ Number.prototype.limit = function(min, max) {
 
 var colA = '#fba'
 var colB = '#acf'
+var colC = '#afc'
 var col2 = '#777'
 var col3 = '#eee'
 
 // constants
-var _res = 3
-var _res1 = _res * 4
-var _res2 = 10
-var _len = 700
-var _amp = 500
+var _res = 4
+var _res1 = 3 // red
+var _res2 = 5 // blue
+var _res3 = _res * 5 // green
+var _len = 800
+var _amp = 400
 var _acc = 0.5
 var repeats = 1
 var imprecise = false
 
 var sim1 = new KinematicCurve({
+	name: 'red A ' + _res1,
 	len: _len,
 	amp: _amp,
 	acc: _acc,
 })
-// var sim2 = new KinematicCurve({
-// 	len: _len,
-// 	amp: _amp,
-// 	acc: _acc,
-// })
+var sim2 = new KinematicCurve({
+	name: 'blue B ' + _res2,
+	len: _len,
+	amp: _amp,
+	acc: _acc,
+})
+var sim3 = new KinematicCurve({
+	name: 'green C ' + _res3,
+	len: _len,
+	amp: _amp,
+	acc: _acc,
+})
 
 
 
@@ -67,8 +77,11 @@ chart1.polyline(bottomMarker1).attr({stroke:col2})
 chart1.polyline(bottomMarker2).attr({stroke:col2})
 
 
-// var plot2 = new PlotLine(chart1, { stroke:colB })
-// plot2.draw( generateCurve(_res2, _len, sim2) )
+var plot3 = new PlotLine(chart1, { stroke:colC })
+plot3.draw( generateCurve(_res3, _len, sim3) )
+
+var plot2 = new PlotLine(chart1, { stroke:colB })
+plot2.draw( generateCurve(_res2, _len, sim2) )
 
 var plot1 = new PlotLine(chart1, { stroke:colA })
 plot1.draw( generateCurve(_res1, _len, sim1) )
@@ -129,6 +142,7 @@ function KinematicCurve (opts) {
 
 	var dpos = 0.75
 	var speak = true
+	var name = opts.name
 
 	var time = 0
 	var start = 0
@@ -164,8 +178,6 @@ function KinematicCurve (opts) {
 			velA *= Math.max(0, (end - time) / len2)
 		}
 
-		if (speak && parseFloat(time.toPrecision(8)) >= len1) endingInspection()
-
 		return (velA + velB) * 0.5
 	}
 
@@ -173,7 +185,11 @@ function KinematicCurve (opts) {
 	this.tick = function proc (dtime) {
 
 		time += dtime
-		return pos += dtime * ((acc2 > 0) ? vel() : _vel)
+		pos += dtime * ((acc2 > 0) ? vel() : _vel)
+
+		if (speak && parseFloat(time.toPrecision(8)) >= len1) endingInspection()
+
+		return pos
 	}
 
 
@@ -186,6 +202,7 @@ function KinematicCurve (opts) {
 			"end": len1,
 		})
 		console.log({
+			"name": name,
 			"expected": amp * dpos,
 			"actual": parseFloat(pos.toPrecision(8)),
 		})
