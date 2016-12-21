@@ -10,36 +10,16 @@ var col2 = '#777'
 var col3 = '#eee'
 
 // constants
-var _res = 4
-var _res1 = 3 // red
-var _res2 = 5 // blue
-var _res3 = _res * 5 // green
+var _res = 20
 var _len = 400
 var _amp = 400
 var _acc = 0.5
 var repeats = 1
-var imprecise = false
+var imprecise = 0
 
-var sim1 = new KinematicCurve({
-	name: 'red A ' + _res1,
-	len: 1,
-	amp: 1,
-	acc: _acc,
-})
-var sim2 = new KinematicCurve({
-	name: 'blue B ' + _res2,
-	len: 1,
-	amp: 1,
-	acc: _acc,
-})
-var sim3 = new KinematicCurve({
-	name: 'green C ' + _res3,
-	len: 1,
-	amp: 1,
-	acc: _acc,
-})
-
-
+var drawPWiseSCurve = 1
+var drawPolySCurve = 0
+var drawSinSCurve = 0
 
 var MAX_X = _len * repeats + 20
 var MAX_Y = _amp + 20
@@ -77,33 +57,28 @@ chart1.polyline(bottomMarker1).attr({stroke:col2})
 chart1.polyline(bottomMarker2).attr({stroke:col2})
 
 
-var plot3 = new PlotLine(chart1, { stroke:colC })
-plot3.draw( runCurveSim(_res3, _len, sim3.tick) )
+if (drawPWiseSCurve) {
+	var f = new SimpleCurve(2/5)
+	new PlotLine(chart1, { stroke:colA }).draw( runCurveSim(_res, 1, function(x){
 
-var plot2 = new PlotLine(chart1, { stroke:colB })
-plot2.draw( runCurveSim(_res2, _len, sim2.tick) )
+		console.log( f.getMax() )
+		return f(x)
+	}, true))
+}
 
-var plot1 = new PlotLine(chart1, { stroke:colA })
-plot1.draw( runCurveSim(_res1, _len, sim1.tick) )
+if (drawPolySCurve) {
+	new PlotLine(chart1, { stroke:colB }).draw( runCurveSim(_res, 1, function(x){
 
-var plot1 = new PlotLine(chart1, { stroke:colA })
-var plot2 = new PlotLine(chart1, { stroke:colB })
+		return (3 - 2 * x) * x * x
+	}, true))
+}
 
-var f = simpleCurve1(2/5)
-plot1.draw( runCurveSim(40, 1, function(x){
+if (drawSinSCurve) {
+	new PlotLine(chart1, { stroke:colC }).draw( runCurveSim(_res, 1, function(x){
 
-	var y = f(x)
-	console.log({
-		x: +x.toPrecision(3),
-		y: +y.toPrecision(3),
-	})
-
-	return y
-}, true))
-
-// plot2.draw( runCurveSim(40, 1, function(x){
-// 	return (3 - 2 * x) * x * x
-// }))
+		return Math.sin( Math.PI*x - 0.5*Math.PI ) / 2 + 0.5
+	}, true))
+}
 
 
 function runCurveSim (res, len, sim, dtoggle) {
@@ -117,7 +92,7 @@ function runCurveSim (res, len, sim, dtoggle) {
 	return timeSteps.map(function (idx) {
 
 		if (imprecise) {
-			idx += Math.random() * 4 - 2
+			idx += 0.01 * (Math.random() - 0.5)
 		}
 		t += idx
 		y = parseFloat( sim(dtoggle ? t : idx).toPrecision(10) )
@@ -155,86 +130,13 @@ function PlotLine (paper, svgOpts) {
 	}
 }
 
+function SimpleCurve (pcntMid, pcntLow, _a, _b, _c, _f, p1, p2) {
 
+	tick.getMax = getMax
+	tick.config = config
+	config(pcntMid)
 
-function KinematicCurve (opts) {
-
-	var dpos = 0.75
-	var speak = true
-	var name = opts.name
-
-	var time = 0
-	var start = 0
-	var end = 0
-
-	var pos = opts.p || 0
-	var amp = opts.amp || 500
-	var acc1 = (opts.acc || 1).limit(0, 1)
-	var acc2 = acc1 * 0.5
-	var len1 = opts.len || 500
-	var len2 = len1 * acc2
-	var velA = 0
-	var velB = 0
-	var _vel = 0
-
-	_vel = amp / (len1 - len1 * acc2)
-	var apex = dpos - acc1
-
-	end = (apex >= 0)
-		? len1 * dpos + len2 * (1 - dpos)
-		: 24 * Math.log(dpos) + 460 * dpos + 224
-
-	function vel () {
-
-		velB = velA
-		velA = _vel
-
-		if (time - start < len2) {
-			velA *= (time - start) / len2
-		}
-
-		if (end - time < len2) {
-			velA *= Math.max(0, (end - time) / len2)
-		}
-
-		return (velA + velB) * 0.5
-	}
-
-	// Process that renders the current value when called
-	this.tick = function proc (dtime) {
-
-		time += dtime
-		pos += dtime * ((acc2 > 0) ? vel() : _vel)
-
-		if (speak && parseFloat(time.toPrecision(8)) >= len1) endingInspection()
-
-		return pos
-	}
-
-
-	function endingInspection () {
-
-		speak = false
-
-		console.log({
-			"time now": parseFloat(time.toPrecision(8)),
-			"end": len1,
-		})
-		console.log({
-			"name": name,
-			"expected": amp * dpos,
-			"actual": parseFloat(pos.toPrecision(8)),
-		})
-	}
-}
-
-
-function simpleCurve1 (pcntMid, pcntLow, _a, _b, _c, _f, p1, p2) {
-
-	tick.updateShape = updateShape
-	tick.maxVelocity = maxVelocity
-
-	updateShape(pcntMid)
+	return tick
 
 	function tick (x) {
 
@@ -251,10 +153,13 @@ function simpleCurve1 (pcntMid, pcntLow, _a, _b, _c, _f, p1, p2) {
 
 			case (x >= p2 && x <= 1):
 				return 1 - (_a * _a) / _b * Math.pow(1 - x, 2)
+
+			default:
+				return 0
 		}
 	}
 
-	function updateShape (pcntMid) {
+	function config (pcntMid) {
 
 		pcntMid = Math.max(0, Math.min(1, pcntMid))
 		pcntLow = (1 - pcntMid) * 0.5
@@ -267,10 +172,8 @@ function simpleCurve1 (pcntMid, pcntLow, _a, _b, _c, _f, p1, p2) {
 		_c = (_f == 1) ? _a : _a / (_b * 0.5)
 	}
 
-	function maxVelocity () {
+	function getMax () {
 
 		return _c
 	}
-
-	return tick
 }
