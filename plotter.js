@@ -1,3 +1,4 @@
+var sqrt = Math.sqrt
 
 Number.prototype.limit = function(min, max) {
 	return Math.min(Math.max(this, min), max)
@@ -56,10 +57,11 @@ chart1.polyline(topmarker2).attr({stroke:col2})
 chart1.polyline(bottomMarker1).attr({stroke:col2})
 chart1.polyline(bottomMarker2).attr({stroke:col2})
 
-var span = 0.35
 
 if (drawPWiseSCurve) {
-	var f = new SimpleCurve(2/5).startAt(0.5 - span).endAt(0.5 + span)
+
+	var f = new SimpleCurve(1/5).startAt(0.1).endAt(0.4)
+
 	new PlotLine(chart1, { stroke:colA }).draw( runCurveSim(_res, 1, function(x){
 
 		return f(x)
@@ -67,6 +69,7 @@ if (drawPWiseSCurve) {
 }
 
 if (drawPolySCurve) {
+
 	new PlotLine(chart1, { stroke:colB }).draw( runCurveSim(_res, 1, function(x){
 
 		return (3 - 2 * x) * x * x
@@ -74,6 +77,7 @@ if (drawPolySCurve) {
 }
 
 if (drawSinSCurve) {
+
 	new PlotLine(chart1, { stroke:colC }).draw( runCurveSim(_res, 1, function(x){
 
 		return Math.sin(x*Math.PI - 0.5*Math.PI) / 2 + 0.5
@@ -190,11 +194,7 @@ function SimpleCurve (pcntMid, pcntLow, _x, _y, y1, x2, y2, t1, t2, _v, _a, _b, 
 			_b = (_a - 2) * 2 + 2
 			_c = (_z == 1) ? _a : _a / (_b * 0.5)
 
-			// console.log(
-			// 	+_a.toPrecision(3),
-			// 	+_b.toPrecision(3),
-			// 	+_c.toPrecision(3))
-			endAt(y2)
+			if (_a < 1) endAt(y2)
 		}
 
 		return tick
@@ -216,15 +216,15 @@ function SimpleCurve (pcntMid, pcntLow, _x, _y, y1, x2, y2, t1, t2, _v, _a, _b, 
 		y2 = to
 		var d = y2 - y1
 
-		if (d >= pcntLow) {
+		if (+d.toPrecision(4) > +(pcntLow * _c).toPrecision(4)) {
 			t1 = pcntLow
 			t2 = d - pcntLow * d
 			x2 = 1 - (1 - d) * 1 / _c
 		}
 
 		else {
-			t1 = t2 = d * 0.5
-			x2 = 1 - (1 - y2) * 1 / _c
+			x2 = Math.sqrt( 1 / ((_a*_a/_b) / (d*2)) )
+			t1 = t2 = x2 * 0.5
 		}
 
 		return tick
