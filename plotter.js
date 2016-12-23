@@ -10,7 +10,7 @@ var col2 = '#777'
 var col3 = '#eee'
 
 // constants
-var _res = 20
+var _res = 60
 var _len = 400
 var _amp = 400
 var _acc = 0.5
@@ -56,14 +56,14 @@ chart1.polyline(topmarker2).attr({stroke:col2})
 chart1.polyline(bottomMarker1).attr({stroke:col2})
 chart1.polyline(bottomMarker2).attr({stroke:col2})
 
+var span = 0.35
 
 if (drawPWiseSCurve) {
-	var f = new SimpleCurve(2/5)
+	var f = new SimpleCurve(2/5).startAt(0.5 - span).endAt(0.5 + span)
 	new PlotLine(chart1, { stroke:colA }).draw( runCurveSim(_res, 1, function(x){
 
-		console.log( f.getMax() )
 		return f(x)
-	}, true))
+	}))
 }
 
 if (drawPolySCurve) {
@@ -76,7 +76,7 @@ if (drawPolySCurve) {
 if (drawSinSCurve) {
 	new PlotLine(chart1, { stroke:colC }).draw( runCurveSim(_res, 1, function(x){
 
-		return Math.sin( Math.PI*x - 0.5*Math.PI ) / 2 + 0.5
+		return Math.sin(x*Math.PI - 0.5*Math.PI) / 2 + 0.5
 	}, true))
 }
 
@@ -130,46 +130,104 @@ function PlotLine (paper, svgOpts) {
 	}
 }
 
-function SimpleCurve (pcntMid, pcntLow, _a, _b, _c, _f, p1, p2) {
+function SimpleCurve (pcntMid, pcntLow, _x, _y, y1, x2, y2, t1, t2, _v, _a, _b, _c, _z) {
+
+	_y = _x = _v = 0
+	y1 = y2 = x2 = 0
 
 	tick.getMax = getMax
-	tick.config = config
-	config(pcntMid)
+	tick.midLength = midLength
+	tick.startAt = startAt
+	tick.endAt = endAt
+	midLength(pcntMid)
 
 	return tick
 
-	function tick (x) {
+	function tick (dt) {
+
+		if (_y === y2) {
+			return _y
+		}
+
+		_x += dt
 
 		switch (true) {
 
-			case (x >= 1):
-				return 1
+			case (_x >= x2):
+				_x = x2
+				_y = y2
+				_v = 0
+				return _y
 
-			case (x >= 0 && x < p1):
-				return 1 / _b * Math.pow(x * _a, 2)
+			case (_x >= 0 && _x < t1): // leading curve
+				_y = 1 / _b * Math.pow(_x * _a, 2) + y1
+				_v = (2 * _x * _a * _a) / _b
+				return _y
 
-			case (x >= p1 && x < p2):
-				return 0.5 + _c * (x - 0.5)
+			case (_x >= t1 && _x < t2): // linear midsection
+				_y = 0.5 + _c * (_x - 0.5) + y1
+				_v = _c
+				return _y
 
-			case (x >= p2 && x <= 1):
-				return 1 - (_a * _a) / _b * Math.pow(1 - x, 2)
+			case (_x >= t2 && _x <= x2): // trailing curve
+				_y = y2 - (_a * _a) / _b * Math.pow(x2 - _x, 2)
+				_v = (2 * _a * _a * Math.pow(x2 - _x, 2)) / _b
+				return _y
 
 			default:
-				return 0
+				throw new Error('For t = ' + _x + ', no condition matched.')
 		}
 	}
 
-	function config (pcntMid) {
+	function midLength (pcntMid) {
 
-		pcntMid = Math.max(0, Math.min(1, pcntMid))
-		pcntLow = (1 - pcntMid) * 0.5
-		p1 = pcntLow
-		p2 = pcntLow + pcntMid
+		if (pcntMid && pcntMid >= 0 && pcntMid <= 1) {
+			pcntMid = Math.max(0, Math.min(1, pcntMid))
+			pcntLow = (1 - pcntMid) * 0.5
 
-		_f = (pcntLow == 0) ? 1 : pcntLow
-		_a = 1 / _f
-		_b = (_a - 2) * 2 + 2
-		_c = (_f == 1) ? _a : _a / (_b * 0.5)
+			_z = (pcntLow == 0) ? 1 : pcntLow
+			_a = 1 / _z
+			_b = (_a - 2) * 2 + 2
+			_c = (_z == 1) ? _a : _a / (_b * 0.5)
+
+			// console.log(
+			// 	+_a.toPrecision(3),
+			// 	+_b.toPrecision(3),
+			// 	+_c.toPrecision(3))
+			endAt(y2)
+		}
+
+		return tick
+	}
+
+	function startAt (pos) {
+
+		if (pos && pos >= 0 || pos <= 1) {
+			_y = y1 = pos
+			endAt(y2)
+		}
+
+		return tick
+	}
+
+	function endAt (to) {
+
+		y1 = _y
+		y2 = to
+		var d = y2 - y1
+
+		if (d >= pcntLow) {
+			t1 = pcntLow
+			t2 = d - pcntLow * d
+			x2 = 1 - (1 - d) * 1 / _c
+		}
+
+		else {
+			t1 = t2 = d * 0.5
+			x2 = 1 - (1 - y2) * 1 / _c
+		}
+
+		return tick
 	}
 
 	function getMax () {
