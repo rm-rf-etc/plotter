@@ -60,7 +60,7 @@ chart1.polyline(bottomMarker2).attr({stroke:col2})
 
 if (drawPWiseSCurve) {
 
-	var f = new SimpleCurve(1/5).startAt(0.1).endAt(0.4)
+	var f = new SimpleCurve(2/5).startAt(0).endAt(1)
 
 	new PlotLine(chart1, { stroke:colA }).draw( runCurveSim(_res, 1, function(x){
 
@@ -134,10 +134,11 @@ function PlotLine (paper, svgOpts) {
 	}
 }
 
-function SimpleCurve (pcntMid, pcntLow, _x, _y, y1, x2, y2, t1, t2, _v, _a, _b, _c, _z) {
+function SimpleCurve (pcntMid, pcntLow, _x, _y, y1, x2, y2, t1, t2, _v, _a, _b, _c, _d, dta, _z) {
 
 	_y = _x = _v = 0
 	y1 = y2 = x2 = 0
+	_d = 1
 
 	tick.getMax = getMax
 	tick.midLength = midLength
@@ -164,17 +165,17 @@ function SimpleCurve (pcntMid, pcntLow, _x, _y, y1, x2, y2, t1, t2, _v, _a, _b, 
 				return _y
 
 			case (_x >= 0 && _x < t1): // leading curve
-				_y = 1 / _b * Math.pow(_x * _a, 2) + y1
+				_y = (1 / _b * Math.pow(_x * _a, 2)) * _d + y1
 				_v = (2 * _x * _a * _a) / _b
 				return _y
 
 			case (_x >= t1 && _x < t2): // linear midsection
-				_y = 0.5 + _c * (_x - 0.5) + y1
+				_y = (0.5 + _c * (_x - 0.5)) * _d + y1
 				_v = _c
 				return _y
 
 			case (_x >= t2 && _x <= x2): // trailing curve
-				_y = y2 - (_a * _a) / _b * Math.pow(x2 - _x, 2)
+				_y = (-(_a * _a) / _b * Math.pow(x2 - _x, 2) * _d) + y2
 				_v = (2 * _a * _a * Math.pow(x2 - _x, 2)) / _b
 				return _y
 
@@ -185,7 +186,7 @@ function SimpleCurve (pcntMid, pcntLow, _x, _y, y1, x2, y2, t1, t2, _v, _a, _b, 
 
 	function midLength (pcntMid) {
 
-		if (pcntMid && pcntMid >= 0 && pcntMid <= 1) {
+		if (pcntMid >= 0 && pcntMid <= 1) {
 			pcntMid = Math.max(0, Math.min(1, pcntMid))
 			pcntLow = (1 - pcntMid) * 0.5
 
@@ -214,16 +215,17 @@ function SimpleCurve (pcntMid, pcntLow, _x, _y, y1, x2, y2, t1, t2, _v, _a, _b, 
 
 		y1 = _y
 		y2 = to
-		var d = y2 - y1
+		dta = Math.abs(y2 - y1)
+		_d = (y2 > y1) ? 1 : -1
 
-		if (+d.toPrecision(4) > +(pcntLow * _c).toPrecision(4)) {
+		if (+dta.toPrecision(5) > +(pcntLow * _c).toPrecision(5)) {
 			t1 = pcntLow
-			t2 = d - pcntLow * d
-			x2 = 1 - (1 - d) * 1 / _c
+			t2 = dta - pcntLow * dta
+			x2 = 1 - (1 - dta) * 1 / _c
 		}
 
 		else {
-			x2 = Math.sqrt( 1 / ((_a*_a/_b) / (d*2)) )
+			x2 = Math.sqrt( 1 / ((_a*_a/_b) / (dta*2)) )
 			t1 = t2 = x2 * 0.5
 		}
 
