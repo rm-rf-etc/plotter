@@ -22,8 +22,8 @@ var drawPWiseSCurve = 1
 var drawPolySCurve = 0
 var drawSinSCurve = 0
 
-var MAX_X = _len * repeats + 20
-var MAX_Y = _amp + 20
+var MAX_X = _len * repeats + 1
+var MAX_Y = _amp + 30
 
 
 var chart1 = Snap(MAX_X, MAX_Y).attr({ id: 'chart1' })
@@ -267,6 +267,7 @@ function SimpleCurve (pcntMid, pcntLow, _x, _y, y1, x2, y2, t1, t2, _v, _a, _b, 
 
 var start = 0
 var end = 1
+var shape = 2/5
 
 document.querySelector('#input-start').addEventListener("change", function(e){
 
@@ -283,5 +284,14 @@ document.querySelector('#input-end').addEventListener("change", function(e){
 
 	end = +this.value
 	f.reset().startAt(start).endAt(end)
+	drawPiecewise()
+})
+
+document.querySelector('#input-shape').addEventListener("change", function(e){
+
+	line1.remove()
+
+	shape = +this.value
+	f.reset().midLength(shape * 2).startAt(start).endAt(end)
 	drawPiecewise()
 })

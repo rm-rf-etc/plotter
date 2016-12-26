@@ -24,15 +24,29 @@
 			-webkit-appearance: slider-vertical;
 			writing-mode: bt-lr;
 		}
-		#controls {
+		#controls-r {
 			position: absolute;
 			left: 425px;
-			top: 20px;
+			top: 30px;
+		}
+		#controls-t {
+			position: absolute;
+			left: 200px;
+			top: 5px;
+			width: 200px;
+			height: 20px;
+			z-index: 5;
+		}
+		#input-shape {
+			width: 100%;
 		}
 	</style>
 </head>
 <body style="height:100%; width:100%;">
-	<div id="controls">
+	<div id="controls-t">
+		<input id="input-shape" type="range" value="0.15" step="0.01" min="0" max="0.5">
+	</div>
+	<div id="controls-r">
 		<input id="input-start" type="range" value="0" step="0.01" min="0" max="1" orient="vertical">
 		<input id="input-end" type="range" value="1" step="0.01" min="0" max="1" orient="vertical">
 	</div>
