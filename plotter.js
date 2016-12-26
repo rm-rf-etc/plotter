@@ -1,4 +1,5 @@
 var line1
+var $ = function(str){ return document.querySelector(str) }
 
 Number.prototype.limit = function(min, max) {
 	return Math.min(Math.max(this, min), max)
@@ -10,55 +11,12 @@ var colC = '#afc'
 var col2 = '#777'
 var col3 = '#eee'
 
-// constants
-var _res = 60
-var _len = 400
-var _amp = 400
-var _acc = 0.5
-var repeats = 1
-var imprecise = 0
-
 var drawPWiseSCurve = 1
 var drawPolySCurve = 0
 var drawSinSCurve = 0
 
-var MAX_X = _len * repeats + 1
-var MAX_Y = _amp + 2
 
-var chartBody = document.querySelector('#chart-body')
-chartBody.style.width = MAX_X
-chartBody.style.height = MAX_Y
-var chart1 = Snap(MAX_X, MAX_Y).attr({ id: 'chart1' }).appendTo(chartBody)
-
-var line_mid = _amp * 0.5 + 1
-var line_hi = _amp + 1
-var line_lo = 1
-
-// The 50% marker line
-var midline = [0, line_mid, MAX_X, line_mid]
-// upper bound
-var topline = [0, line_hi, MAX_X, line_hi]
-// lower bound and DC baseline
-var bottomline = [0, line_lo, MAX_X, line_lo]
-
-// upper timeline markers
-var topmarker1 = [1, line_hi, 1, line_hi-6]
-var topmarker2 = [_len, line_hi, _len, line_hi-6]
-
-// lower timeline markers
-var bottomMarker1 = [1, line_lo, 1, line_lo+6]
-var bottomMarker2 = [_len, line_lo, _len, line_lo+6]
-
-chart1.polyline(topline).attr({stroke:col2})
-chart1.polyline(midline).attr({stroke:col3})
-chart1.polyline(bottomline).attr({stroke:col2})
-
-chart1.polyline(topmarker1).attr({stroke:col2})
-chart1.polyline(topmarker2).attr({stroke:col2})
-
-chart1.polyline(bottomMarker1).attr({stroke:col2})
-chart1.polyline(bottomMarker2).attr({stroke:col2})
-
+var chart = new ChartBody(400, 400)
 
 var f = new SimpleCurve(2/5).startAt(0).endAt(1)
 line1 = new PlotLine(chart1, { stroke:colA })
@@ -267,36 +225,104 @@ function SimpleCurve (pcntMid, pcntLow, _x, _y, y1, x2, y2, t1, t2, _v, _a, _b, 
 	}
 }
 
-var start = 0
-var end = 1
-var shape = 2/5
 
-var readout1 = document.querySelector('#shape-value')
 
-document.querySelector('#input-start').addEventListener("change", function(e){
+function ChartBody (h, w) {
 
-	line1.remove()
+	var self = this
+	self.size = size
+	h = h || 400
+	w = w || 400
 
-	start = +this.value
-	f.reset().startAt(start).endAt(end)
-	drawPiecewise()
-})
+	var _res = 60
+	var _len = w
+	var _amp = h
+	var repeats = 1
+	var imprecise = 0
 
-document.querySelector('#input-end').addEventListener("change", function(e){
+	var MAX_X = _len * repeats + 1
+	var MAX_Y = _amp + 2
 
-	line1.remove()
+	var line_mid = _amp * 0.5 + 1
+	var line_hi = _amp + 1
+	var line_lo = 1
 
-	end = +this.value
-	f.reset().startAt(start).endAt(end)
-	drawPiecewise()
-})
+	var start = 0
+	var end = 1
+	var shape = 2/5
 
-document.querySelector('#input-shape').addEventListener("change", function(e){
+	// The 50% marker line
+	var midline = [0, line_mid, MAX_X, line_mid]
+	// upper bound
+	var topline = [0, line_hi, MAX_X, line_hi]
+	// lower bound and DC baseline
+	var bottomline = [0, line_lo, MAX_X, line_lo]
 
-	line1.remove()
+	// upper timeline markers
+	var topmarker1 = [1, line_hi, 1, line_hi-6]
+	var topmarker2 = [_len, line_hi, _len, line_hi-6]
 
-	shape = +this.value
-	readout1.innerHTML = shape
-	f.reset().midLength(shape).startAt(start).endAt(end)
-	drawPiecewise()
-})
+	// lower timeline markers
+	var bottomMarker1 = [1, line_lo, 1, line_lo+6]
+	var bottomMarker2 = [_len, line_lo, _len, line_lo+6]
+
+	var $readout1 = $('#shape-value')
+	var $controlTop = $('#input-shape')
+	var $controlRight1 = $('#input-start')
+	var $controlRight2 = $('#input-end')
+	var $chartBody = $('#chart-body')
+
+	var $chart = Snap().attr({ id: 'chart1' }).appendTo($chartBody)
+	size(h, w)
+
+
+	$('#input-start').addEventListener("change", function(e){
+
+		line1.remove()
+
+		start = +this.value
+		f.reset().startAt(start).endAt(end)
+		drawPiecewise()
+	})
+
+	$('#input-end').addEventListener("change", function(e){
+
+		line1.remove()
+
+		end = +this.value
+		f.reset().startAt(start).endAt(end)
+		drawPiecewise()
+	})
+
+	$('#input-shape').addEventListener("change", function(e){
+
+		line1.remove()
+
+		shape = +this.value
+		$readout1.innerHTML = shape
+		f.reset().midLength(shape).startAt(start).endAt(end)
+		drawPiecewise()
+	})
+
+	function size (h, w) {
+
+		$controlTop.style.width = w * 0.5
+		$chartBody.style.width = w
+
+		$controlRight1.style.height = h
+		$controlRight2.style.height = h
+		$chartBody.style.height = h
+
+		$chart.attr({ width:w, height:h })
+
+		$chart.polyline(topline).attr({stroke:col2})
+		$chart.polyline(midline).attr({stroke:col3})
+		$chart.polyline(bottomline).attr({stroke:col2})
+
+		$chart.polyline(topmarker1).attr({stroke:col2})
+		$chart.polyline(topmarker2).attr({stroke:col2})
+
+		$chart.polyline(bottomMarker1).attr({stroke:col2})
+		$chart.polyline(bottomMarker2).attr({stroke:col2})
+	}
+}
