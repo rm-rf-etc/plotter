@@ -23,10 +23,12 @@ var drawPolySCurve = 0
 var drawSinSCurve = 0
 
 var MAX_X = _len * repeats + 1
-var MAX_Y = _amp + 30
+var MAX_Y = _amp + 2
 
-
-var chart1 = Snap(MAX_X, MAX_Y).attr({ id: 'chart1' })
+var chartBody = document.querySelector('#chart-body')
+chartBody.style.width = MAX_X
+chartBody.style.height = MAX_Y
+var chart1 = Snap(MAX_X, MAX_Y).attr({ id: 'chart1' }).appendTo(chartBody)
 
 var line_mid = _amp * 0.5 + 1
 var line_hi = _amp + 1
@@ -269,6 +271,8 @@ var start = 0
 var end = 1
 var shape = 2/5
 
+var readout1 = document.querySelector('#shape-value')
+
 document.querySelector('#input-start').addEventListener("change", function(e){
 
 	line1.remove()
@@ -292,6 +296,7 @@ document.querySelector('#input-shape').addEventListener("change", function(e){
 	line1.remove()
 
 	shape = +this.value
-	f.reset().midLength(shape * 2).startAt(start).endAt(end)
+	readout1.innerHTML = shape
+	f.reset().midLength(shape).startAt(start).endAt(end)
 	drawPiecewise()
 })
