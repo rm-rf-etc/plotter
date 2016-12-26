@@ -1,4 +1,4 @@
-var sqrt = Math.sqrt
+var line1
 
 Number.prototype.limit = function(min, max) {
 	return Math.min(Math.max(this, min), max)
@@ -58,14 +58,22 @@ chart1.polyline(bottomMarker1).attr({stroke:col2})
 chart1.polyline(bottomMarker2).attr({stroke:col2})
 
 
-if (drawPWiseSCurve) {
+var f = new SimpleCurve(2/5).startAt(0).endAt(1)
+line1 = new PlotLine(chart1, { stroke:colA })
 
-	var f = new SimpleCurve(2/5).startAt(0).endAt(1)
+function drawPiecewise () {
 
-	new PlotLine(chart1, { stroke:colA }).draw( runCurveSim(_res, 1, function(x){
+	line1.draw(runCurveSim(_res, 1, function(x){
 
 		return f(x)
 	}))
+}
+
+
+
+if (drawPWiseSCurve) {
+
+	drawPiecewise()
 }
 
 if (drawPolySCurve) {
@@ -115,7 +123,17 @@ Here be Classes
 function PlotLine (paper, svgOpts) {
 
 	var points = []
+	var lineObj = null
 	var self = this
+
+	self.remove = function () {
+
+		if (lineObj) {
+			lineObj.remove()
+			points = []
+		}
+		return this
+	}
 
 	self.draw = function (data) {
 
@@ -123,7 +141,7 @@ function PlotLine (paper, svgOpts) {
 			self.add(data)
 		}
 
-		paper.polyline(points).attr(svgOpts)
+		lineObj = paper.polyline(points).attr(svgOpts)
 		return this
 	}
 
@@ -140,10 +158,12 @@ function SimpleCurve (pcntMid, pcntLow, _x, _y, y1, x2, y2, t1, t2, _v, _a, _b, 
 	y1 = y2 = x2 = 0
 	_d = 1
 
+	tick.reset = reset
 	tick.getMax = getMax
 	tick.midLength = midLength
 	tick.startAt = startAt
 	tick.endAt = endAt
+
 	midLength(pcntMid)
 
 	return tick
@@ -195,7 +215,9 @@ function SimpleCurve (pcntMid, pcntLow, _x, _y, y1, x2, y2, t1, t2, _v, _a, _b, 
 			_b = (_a - 2) * 2 + 2
 			_c = (_z == 1) ? _a : _a / (_b * 0.5)
 
-			if (_a < 1) endAt(y2)
+			if (_a < 1) {
+				endAt(y2)
+			}
 		}
 
 		return tick
@@ -203,11 +225,10 @@ function SimpleCurve (pcntMid, pcntLow, _x, _y, y1, x2, y2, t1, t2, _v, _a, _b, 
 
 	function startAt (pos) {
 
-		if (pos && pos >= 0 || pos <= 1) {
+		if (pos >= 0 || pos <= 1) {
 			_y = y1 = pos
 			endAt(y2)
 		}
-
 		return tick
 	}
 
@@ -236,4 +257,31 @@ function SimpleCurve (pcntMid, pcntLow, _x, _y, y1, x2, y2, t1, t2, _v, _a, _b, 
 
 		return _c
 	}
+
+	function reset () {
+
+		_x = 0
+		return tick
+	}
 }
+
+var start = 0
+var end = 1
+
+document.querySelector('#input-start').addEventListener("change", function(e){
+
+	line1.remove()
+
+	start = +this.value
+	f.reset().startAt(start).endAt(end)
+	drawPiecewise()
+})
+
+document.querySelector('#input-end').addEventListener("change", function(e){
+
+	line1.remove()
+
+	end = +this.value
+	f.reset().startAt(start).endAt(end)
+	drawPiecewise()
+})
