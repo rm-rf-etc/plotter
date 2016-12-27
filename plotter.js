@@ -28,18 +28,20 @@ chart.plot('line1', { stroke:colA })
 var start = 0
 var end = 1
 var shape = 2/5
+
 var fn1 = function(){
 
 	var data = runCurveSim(_res, 1, curves['a'])
-	curves['a'].reset().startAt(start).endAt(end)
+	curves['a'].reset()
 	return data
 }
+
 chart.lines('line1').setFn(fn1)
 
 $('#input-start').addEventListener("change", function(e){
 
 	start = +this.value
-	curves['a'].reset().startAt(start).endAt(end)
+	curves['a'].reset().setup(start, end)
 	chart.lines('line1').render()
 })
 
@@ -48,7 +50,7 @@ $('#input-end').addEventListener("change", function(e){
 	chart.lines('line1').clear()
 
 	end = +this.value
-	curves['a'].reset().startAt(start).endAt(end)
+	curves['a'].reset().setup(start, end)
 	chart.lines('line1').render()
 })
 
@@ -58,14 +60,14 @@ $('#input-shape').addEventListener("change", function(e){
 
 	shape = +this.value
 	chart.output(shape)
-	curves['a'].reset().midLength(shape).startAt(start).endAt(end)
+	curves['a'].reset().setup(start, end, shape)
 	chart.lines('line1').render()
 })
 
 
 if (drawPWiseSCurve) {
 
-	curves['a'] = new SimpleCurve(2/5).startAt(0).endAt(1)
+	curves['a'] = new SimpleCurve(2/5)
 	chart.lines('line1').render()
 }
 
@@ -113,19 +115,24 @@ Here be Classes
 
 */
 
-function SimpleCurve (pcntMid, pcntLow, _x, _y, y1, x2, y2, t1, t2, _v, _a, _b, _c, _d, dta, _z) {
+function SimpleCurve (length, start, end) {
 
-	_y = _x = _v = 0
-	y1 = y2 = x2 = 0
-	_d = 1
+	var pcntMid, pcntLow, _x, _y, y1, x2, y2, t1, t2, _v, _a, _b, _c, _d, dta, _z = 0
+
+	length = (typeof length == 'undefined') ? 0.4 : length
+	start = (typeof start == 'undefined') ? 0 : start
+	end = (typeof end == 'undefined') ? 1 : end
+
+	_x = _y = y1 = start
+	y2 = x2 = end
+	_v = _d = 1
+	t1 = t2 = 0.5
 
 	tick.reset = reset
-	tick.getMax = getMax
-	tick.midLength = midLength
-	tick.startAt = startAt
-	tick.endAt = endAt
+	tick.setup = setup
+	tick.getMaxVelocity = getMaxVelocity
 
-	midLength(pcntMid)
+	setup(start, end, pcntMid)
 
 	return tick
 
@@ -165,40 +172,36 @@ function SimpleCurve (pcntMid, pcntLow, _x, _y, y1, x2, y2, t1, t2, _v, _a, _b, 
 		}
 	}
 
-	function midLength (pcntMid) {
+	function setup (_s, _e, _l) {
 
-		if (pcntMid >= 0 && pcntMid <= 1) {
-			pcntMid = Math.max(0, Math.min(1, pcntMid))
-			pcntLow = (1 - pcntMid) * 0.5
+		end = (_e >= 0 && _e <= 1) ? _e : end
+		start = (_s >= 0 && _s <= 1) ? _s : start
+		length = (_l >= 0 && _l <= 1) ? _l : length
 
-			_z = (pcntLow == 0) ? 1 : pcntLow
-			_a = 1 / _z
-			_b = (_a - 2) * 2 + 2
-			_c = (_z == 1) ? _a : _a / (_b * 0.5)
-
-			if (_a < 1) {
-				endAt(y2)
-			}
+		if (start >= 0 || start <= 1) {
+			_y = y1 = start
 		}
-
-		return tick
-	}
-
-	function startAt (pos) {
-
-		if (pos >= 0 || pos <= 1) {
-			_y = y1 = pos
-			endAt(y2)
+		if (end >= 0 || end <= 1) {
+			y2 = end
 		}
-		return tick
-	}
-
-	function endAt (to) {
 
 		y1 = _y
-		y2 = to
 		dta = Math.abs(y2 - y1)
 		_d = (y2 > y1) ? 1 : -1
+
+		pcntMid = length
+		pcntLow = (1 - pcntMid) * 0.5
+
+		_z = (pcntLow == 0) ? 1 : pcntLow
+		_a = 1 / _z
+		_b = (_a - 2) * 2 + 2
+		_c = (_z == 1) ? _a : _a / (_b * 0.5)
+
+		if (_a == 1) {
+			t1 = 0
+			t2 = x2 = dta * _c
+			return tick
+		}
 
 		if (+dta.toPrecision(5) > +(pcntLow * _c).toPrecision(5)) {
 			t1 = pcntLow
@@ -214,14 +217,14 @@ function SimpleCurve (pcntMid, pcntLow, _x, _y, y1, x2, y2, t1, t2, _v, _a, _b, 
 		return tick
 	}
 
-	function getMax () {
+	function getMaxVelocity () {
 
 		return _c
 	}
 
-	function reset () {
+	function reset (opts) {
 
-		_x = 0
+		_x = _y = 0
 		return tick
 	}
 }
@@ -252,10 +255,13 @@ function Chart (h, w) {
 	var $chartBody = $('#chart-body')
 
 	var $chart = Snap().attr({ id: 'chart1' }).appendTo($chartBody)
+
+	var lns = []
 	size(h, w)
 
 	function size (h, w) {
 
+		lns.forEach(function(line){ line.remove() })
 		_len = w
 		_amp = h
 
@@ -281,24 +287,24 @@ function Chart (h, w) {
 		var bottomMarker1 = [1, line_lo, 1, line_lo+6]
 		var bottomMarker2 = [_len, line_lo, _len, line_lo+6]
 
-		$controlTop.style.width = w * 0.5
-		$chartBody.style.width = MAX_X
+		$controlTop.style.width = w * 0.5 + 'px'
+		$chartBody.style.width = MAX_X + 'px'
 
-		$controlRight1.style.height = h
-		$controlRight2.style.height = h
-		$chartBody.style.height = MAX_Y
+		$controlRight1.style.height = h + 'px'
+		$controlRight2.style.height = h + 'px'
+		$chartBody.style.height = MAX_Y + 'px'
 
 		$chart.attr({ width:MAX_X, height:MAX_Y })
 
-		$chart.polyline(topline).attr({stroke:col2})
-		$chart.polyline(midline).attr({stroke:col3})
-		$chart.polyline(bottomline).attr({stroke:col2})
+		lns.push( $chart.polyline(topline).attr({stroke:col2}) )
+		lns.push( $chart.polyline(midline).attr({stroke:col3}) )
+		lns.push( $chart.polyline(bottomline).attr({stroke:col2}) )
 
-		$chart.polyline(topmarker1).attr({stroke:col2})
-		$chart.polyline(topmarker2).attr({stroke:col2})
+		lns.push( $chart.polyline(topmarker1).attr({stroke:col2}) )
+		lns.push( $chart.polyline(topmarker2).attr({stroke:col2}) )
 
-		$chart.polyline(bottomMarker1).attr({stroke:col2})
-		$chart.polyline(bottomMarker2).attr({stroke:col2})
+		lns.push( $chart.polyline(bottomMarker1).attr({stroke:col2}) )
+		lns.push( $chart.polyline(bottomMarker2).attr({stroke:col2}) )
 
 		Object.keys(lines).forEach(function(name){
 
