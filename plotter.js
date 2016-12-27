@@ -11,45 +11,78 @@ var colC = '#afc'
 var col2 = '#777'
 var col3 = '#eee'
 
+var _res = 60
+var imprecise = 0
+
 var drawPWiseSCurve = 1
 var drawPolySCurve = 0
 var drawSinSCurve = 0
 
 
-var chart = new ChartBody(400, 400)
+var chart = new Chart(400, 400)
+window.chart = chart
 
-var f = new SimpleCurve(2/5).startAt(0).endAt(1)
-line1 = new PlotLine(chart1, { stroke:colA })
+var curves = {}
+chart.plot('line1', { stroke:colA })
 
-function drawPiecewise () {
+var start = 0
+var end = 1
+var shape = 2/5
+var fn1 = function(){
 
-	line1.draw(runCurveSim(_res, 1, function(x){
-
-		return f(x)
-	}))
+	var data = runCurveSim(_res, 1, curves['a'])
+	curves['a'].reset().startAt(start).endAt(end)
+	return data
 }
+chart.lines('line1').setFn(fn1)
 
+$('#input-start').addEventListener("change", function(e){
+
+	start = +this.value
+	curves['a'].reset().startAt(start).endAt(end)
+	chart.lines('line1').render()
+})
+
+$('#input-end').addEventListener("change", function(e){
+
+	chart.lines('line1').clear()
+
+	end = +this.value
+	curves['a'].reset().startAt(start).endAt(end)
+	chart.lines('line1').render()
+})
+
+$('#input-shape').addEventListener("change", function(e){
+
+	chart.lines('line1').clear()
+
+	shape = +this.value
+	chart.output(shape)
+	curves['a'].reset().midLength(shape).startAt(start).endAt(end)
+	chart.lines('line1').render()
+})
 
 
 if (drawPWiseSCurve) {
 
-	drawPiecewise()
+	curves['a'] = new SimpleCurve(2/5).startAt(0).endAt(1)
+	chart.lines('line1').render()
 }
 
 if (drawPolySCurve) {
 
-	new PlotLine(chart1, { stroke:colB }).draw( runCurveSim(_res, 1, function(x){
+	chart.plot('line2', { stroke:colB }).setFn( runCurveSim(_res, 1, function(x){
 
 		return (3 - 2 * x) * x * x
-	}, true))
+	}, true)).render()
 }
 
 if (drawSinSCurve) {
 
-	new PlotLine(chart1, { stroke:colC }).draw( runCurveSim(_res, 1, function(x){
+	chart.plot('line3', { stroke:colC }).setFn( runCurveSim(_res, 1, function(x){
 
 		return Math.sin(x*Math.PI - 0.5*Math.PI) / 2 + 0.5
-	}, true))
+	}, true)).render()
 }
 
 
@@ -68,7 +101,7 @@ function runCurveSim (res, len, sim, dtoggle) {
 		}
 		t += idx
 		y = parseFloat( sim(dtoggle ? t : idx).toPrecision(10) )
-		return [t*_len, y*_amp]
+		return [t, y]
 	})
 }
 
@@ -79,38 +112,6 @@ function runCurveSim (res, len, sim, dtoggle) {
 Here be Classes
 
 */
-
-function PlotLine (paper, svgOpts) {
-
-	var points = []
-	var lineObj = null
-	var self = this
-
-	self.remove = function () {
-
-		if (lineObj) {
-			lineObj.remove()
-			points = []
-		}
-		return this
-	}
-
-	self.draw = function (data) {
-
-		if (data) {
-			self.add(data)
-		}
-
-		lineObj = paper.polyline(points).attr(svgOpts)
-		return this
-	}
-
-	self.add = function (data) {
-
-		points.push.call(points, data)
-		return this
-	}
-}
 
 function SimpleCurve (pcntMid, pcntLow, _x, _y, y1, x2, y2, t1, t2, _v, _a, _b, _c, _d, dta, _z) {
 
@@ -227,44 +228,22 @@ function SimpleCurve (pcntMid, pcntLow, _x, _y, y1, x2, y2, t1, t2, _v, _a, _b, 
 
 
 
-function ChartBody (h, w) {
+function Chart (h, w) {
 
 	var self = this
 	self.size = size
+	self.plot = newPlot
+	self.lines = _lines
+	self.output = output
+
+	var lines = {}
+
 	h = h || 400
 	w = w || 400
 
-	var _res = 60
 	var _len = w
 	var _amp = h
 	var repeats = 1
-	var imprecise = 0
-
-	var MAX_X = _len * repeats + 1
-	var MAX_Y = _amp + 2
-
-	var line_mid = _amp * 0.5 + 1
-	var line_hi = _amp + 1
-	var line_lo = 1
-
-	var start = 0
-	var end = 1
-	var shape = 2/5
-
-	// The 50% marker line
-	var midline = [0, line_mid, MAX_X, line_mid]
-	// upper bound
-	var topline = [0, line_hi, MAX_X, line_hi]
-	// lower bound and DC baseline
-	var bottomline = [0, line_lo, MAX_X, line_lo]
-
-	// upper timeline markers
-	var topmarker1 = [1, line_hi, 1, line_hi-6]
-	var topmarker2 = [_len, line_hi, _len, line_hi-6]
-
-	// lower timeline markers
-	var bottomMarker1 = [1, line_lo, 1, line_lo+6]
-	var bottomMarker2 = [_len, line_lo, _len, line_lo+6]
 
 	var $readout1 = $('#shape-value')
 	var $controlTop = $('#input-shape')
@@ -275,45 +254,41 @@ function ChartBody (h, w) {
 	var $chart = Snap().attr({ id: 'chart1' }).appendTo($chartBody)
 	size(h, w)
 
-
-	$('#input-start').addEventListener("change", function(e){
-
-		line1.remove()
-
-		start = +this.value
-		f.reset().startAt(start).endAt(end)
-		drawPiecewise()
-	})
-
-	$('#input-end').addEventListener("change", function(e){
-
-		line1.remove()
-
-		end = +this.value
-		f.reset().startAt(start).endAt(end)
-		drawPiecewise()
-	})
-
-	$('#input-shape').addEventListener("change", function(e){
-
-		line1.remove()
-
-		shape = +this.value
-		$readout1.innerHTML = shape
-		f.reset().midLength(shape).startAt(start).endAt(end)
-		drawPiecewise()
-	})
-
 	function size (h, w) {
 
+		_len = w
+		_amp = h
+
+		var MAX_X = _len * repeats + 1
+		var MAX_Y = _amp + 2
+
+		var line_mid = _amp * 0.5 + 1
+		var line_hi = _amp + 1
+		var line_lo = 1
+
+		// The 50% marker line
+		var midline = [0, line_mid, MAX_X, line_mid]
+		// upper bound
+		var topline = [0, line_hi, MAX_X, line_hi]
+		// lower bound and DC baseline
+		var bottomline = [0, line_lo, MAX_X, line_lo]
+
+		// upper timeline markers
+		var topmarker1 = [1, line_hi, 1, line_hi-6]
+		var topmarker2 = [_len, line_hi, _len, line_hi-6]
+
+		// lower timeline markers
+		var bottomMarker1 = [1, line_lo, 1, line_lo+6]
+		var bottomMarker2 = [_len, line_lo, _len, line_lo+6]
+
 		$controlTop.style.width = w * 0.5
-		$chartBody.style.width = w
+		$chartBody.style.width = MAX_X
 
 		$controlRight1.style.height = h
 		$controlRight2.style.height = h
-		$chartBody.style.height = h
+		$chartBody.style.height = MAX_Y
 
-		$chart.attr({ width:w, height:h })
+		$chart.attr({ width:MAX_X, height:MAX_Y })
 
 		$chart.polyline(topline).attr({stroke:col2})
 		$chart.polyline(midline).attr({stroke:col3})
@@ -324,5 +299,69 @@ function ChartBody (h, w) {
 
 		$chart.polyline(bottomMarker1).attr({stroke:col2})
 		$chart.polyline(bottomMarker2).attr({stroke:col2})
+
+		Object.keys(lines).forEach(function(name){
+
+			lines[name].render()
+		})
+	}
+
+	function _lines (name) {
+
+		return lines[name]
+	}
+
+	function newPlot (name, opts) {
+
+		lines[name] = new PlotLine(opts)
+	}
+
+	function output (val) {
+
+		$readout1.innerHTML = val
+	}
+
+
+	function PlotLine (svgOpts) {
+
+		var points = []
+		var lineObj = null
+		var fn = null
+		var self = this
+
+		self.clear = function () {
+
+			if (lineObj) {
+				lineObj.remove()
+				points = []
+			}
+			return self
+		}
+
+		self.setFn = function (cb) {
+
+			fn = cb
+			return self
+		}
+
+		self.render = function () {
+
+			if (fn) {
+				self.clear()
+				self.add(fn())
+			}
+
+			lineObj = $chart.polyline(points).attr(svgOpts)
+			return self
+		}
+
+		self.add = function (data) {
+
+			points.push(data.map(function(pair){
+
+				return [pair[0] * _len, pair[1] * _amp]
+			}))
+			return self
+		}
 	}
 }
