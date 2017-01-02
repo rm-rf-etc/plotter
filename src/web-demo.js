@@ -1,6 +1,6 @@
 
 var curves = {}
-curves.a = new SimpleCurve(2/5)
+curves.a = new SimpleCurve(7/20)
 curves.b = function(x){ return (3 - 2 * x) * x * x }
 curves.c = function(x){ return Math.sin(x*Math.PI - 0.5*Math.PI) / 2 + 0.5 }
 

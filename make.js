@@ -1,30 +1,50 @@
+#!/usr/bin/env node
 
 var fs = require('fs')
 var minify = require('uglify-js').minify
+var args = process.argv
+var files = []
 
-var files = [
-	'./simplecurve.js',
-	'./plotter.js',
-]
+if (args[0].indexOf('node') > -1) args.splice(0, 1)
 
-var concat = files.map(function(file){
-	return fs.readFileSync(file)
-}).join('')
+if (args[0].indexOf('make.js') > -1) args.splice(0, 1)
 
-var result = minify(concat, {
-		fromString: true,
-		mangle: true,
-		compress: {
-			sequences: true,
-			dead_code: true,
-			conditionals: true,
-			booleans: true,
-			unused: true,
-			if_return: true,
-			join_vars: true,
-			drop_console: true,
-		},
-	}
-)
+if (args.length !== 2) {
+	console.log('Invalid input')
+	return
+}
 
-fs.writeFileSync('./build/build1.js', result.code, 'utf8')
+if (fs.existsSync('./build/' + args[0])) {
+	files = require('./build/' + args[0])
+}
+else {
+	console.log('Build definition not found')
+	return
+}
+
+function build (input, output) {
+
+	var concat = files.map(function(file){
+		return fs.readFileSync(file)
+	}).join('')
+
+	var result = minify(concat, {
+			fromString: true,
+			mangle: true,
+			compress: {
+				sequences: true,
+				dead_code: true,
+				conditionals: true,
+				booleans: true,
+				unused: true,
+				if_return: true,
+				join_vars: true,
+				drop_console: true,
+			},
+		}
+	)
+
+	fs.writeFileSync('./build/dist/' + output, result.code, 'utf8')
+}
+
+build(args[0], args[1])

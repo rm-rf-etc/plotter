@@ -1,0 +1,4 @@
+[
+	"./src/simplecurve.js",
+	"./src/state-machine.js"
+]

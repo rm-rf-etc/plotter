@@ -1,4 +1,9 @@
 
+var module = module || { exports: {} };
+var exports = exports || module.exports;
+module.exports = SimpleCurve;
+
+
 function SimpleCurve (length, start, end) {
 
   var pcntMid, pcntLow, _x, _y, x1, y1, x2, y2, waypt1, waypt2, vel, _a, _b, _c, direction, delta, _z = 0
@@ -109,7 +114,7 @@ function SimpleCurve (length, start, end) {
     return _c
   }
 
-  function reset (opts) {
+  function reset () {
 
     _x = _y = 0
     return tick
