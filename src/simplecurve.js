@@ -94,7 +94,7 @@ function SimpleCurve (length, start, end) {
 			return self
 		}
 
-		if (+delta.toPrecision(5) > +(pcntLow * _c).toPrecision(5)) {
+		if (+delta.toFixed(5) > +(pcntLow * _c).toFixed(5)) {
 			waypt1 = pcntLow
 			waypt2 = delta - pcntLow * delta
 			x2 = 1 - (1 - delta) * 1 / _c

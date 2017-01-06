@@ -1,5 +1,5 @@
 [
 	"./src/simplecurve.js",
 	"./src/statemachine.js",
-	"./src/combiner.js"
+	"./src/testrun1.js"
 ]

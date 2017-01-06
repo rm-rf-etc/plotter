@@ -4,7 +4,7 @@ var fs = require('fs')
 var minify = require('uglify-js').minify
 var args = process.argv
 var files = []
-var compress = false
+var compress = true
 
 if (args[0].indexOf('node') > -1) args.splice(0, 1)
 

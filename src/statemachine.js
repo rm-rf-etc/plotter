@@ -237,5 +237,5 @@ function Linear () {
 
 function fixFloat (float) {
 
-	return parseFloat(float.toPrecision(8));
+	return parseFloat(float.toFixed(8));
 }
